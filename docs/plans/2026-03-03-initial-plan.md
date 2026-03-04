@@ -33,8 +33,8 @@ Each local branch should resolve to one of these states:
 
 | State | Meaning | Default selected? |
 |---|---|---|
-| `MERGED` | PR found, was squash/merged | ✅ Yes |
-| `CLOSED` | PR found, was closed without merging | ⚠️ User decides |
+| `MERGED` | PR merged (`mergedAt != null`) **or** branch already contained in default branch | ✅ Yes |
+| `CLOSED` | PR found, was closed without merging | ❌ No |
 | `OPEN` | PR is still open | ❌ No |
 | `NO_PR` | No PR found (may be local-only WIP) | ❌ No |
 | `DEFAULT` | Is the repo's default branch | 🚫 Never shown |
@@ -44,13 +44,19 @@ Each local branch should resolve to one of these states:
 
 1. **Startup** — Detect the git repo root from `cwd`. Abort with a helpful message if not in a repo.
 2. **Fetch** — Run `git fetch --prune origin` to sync remote state (can be skipped with `--no-fetch` flag).
-3. **Enumerate branches** — Get all local branches except the current branch and the default branch (`main`/`master`, auto-detected).
+3. **Enumerate branches** — Get all local branches except the current branch and the default branch.
+   - Default branch detection: use `origin/HEAD` first; if unavailable, fall back to `main`, then `master`.
 4. **Query GitHub** — For each branch, shell out to:
    ```
-   gh pr list --head <branch> --state all --json state,mergedAt,number,title --limit 1
+   gh pr list --head <branch> --state all --json state,mergedAt,number,title,createdAt --limit 20
    ```
+   - Match by local branch name (`--head <branch>`) only for v1.
+   - If multiple historical PRs exist for the same branch name, choose the most recent opened PR in application logic (highest PR number).
    Run these concurrently (e.g. `asyncio` + `asyncio.subprocess`) to keep startup time reasonable.
 5. **Classify** — Map the API response to a branch state (see table above).
+   - Compute local ancestry signal: branch tip is already reachable from default branch.
+   - Classify as `MERGED` if either `mergedAt != null` **or** ancestry signal is true.
+   - If signals disagree (e.g. PR is `OPEN` but ancestry says contained), ancestry wins and state is `MERGED`.
 6. **Launch TUI** — Pass the classified branch list to the Textual app.
 
 ## TUI Design
@@ -80,6 +86,7 @@ git-branch-cleanup [options]
 Options:
   --no-fetch        Skip git fetch --prune step
   --repo PATH       Path to git repo (default: current directory)
+  --dry-run         Show what would be deleted, but do not delete branches
 ```
 
 ## Implementation Notes
@@ -87,7 +94,7 @@ Options:
 - Use `asyncio.gather` with a semaphore (e.g. concurrency limit of 5) for the `gh` API calls to avoid hammering the API.
 - Handle the edge case where `gh` is not installed or not authenticated — fail early with a clear error message.
 - `git branch -D` (force delete) is appropriate here since the whole point is cleaning up merged work. Make this clear in the confirmation dialog.
-- Consider adding a `--dry-run` flag that runs everything but skips the actual deletion.
+- `--dry-run` is in scope for v1: run full discovery/classification and confirmation flow, but skip the actual delete operation.
 
 ## Out of Scope (for now)
 
