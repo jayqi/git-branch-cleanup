@@ -183,6 +183,53 @@ async def test_enter_key_opens_confirm_modal_from_list_focus() -> None:
 
 
 @pytest.mark.asyncio
+async def test_enter_key_confirms_from_modal() -> None:
+    app = build_app()
+    async with app.run_test() as pilot:
+        await pilot.pause()
+        await pilot.press("enter")
+        await pilot.pause()
+        assert isinstance(app.screen, ConfirmDeleteScreen)
+
+        await pilot.press("enter")
+        await pilot.pause()
+
+    assert app.return_value == TuiResult(selected_branches=["feature/merged"])
+
+
+@pytest.mark.asyncio
+async def test_escape_key_cancels_from_modal() -> None:
+    app = build_app()
+    async with app.run_test() as pilot:
+        await pilot.pause()
+        await pilot.press("enter")
+        await pilot.pause()
+        assert isinstance(app.screen, ConfirmDeleteScreen)
+
+        await pilot.press("escape")
+        await pilot.pause()
+        assert not isinstance(app.screen, ConfirmDeleteScreen)
+        app.exit()
+
+    assert app.return_value is None
+
+
+@pytest.mark.asyncio
+async def test_confirm_modal_has_scrollable_body_and_action_buttons() -> None:
+    app = build_app()
+    async with app.run_test() as pilot:
+        await pilot.pause()
+        app.action_confirm()
+        await pilot.pause()
+
+        assert isinstance(app.screen, ConfirmDeleteScreen)
+        app.screen.query_one("#confirm-body")
+        app.screen.query_one("#cancel")
+        app.screen.query_one("#confirm")
+        app.exit()
+
+
+@pytest.mark.asyncio
 async def test_summary_shows_repo_path_and_state_counts() -> None:
     app = build_app()
     async with app.run_test() as pilot:

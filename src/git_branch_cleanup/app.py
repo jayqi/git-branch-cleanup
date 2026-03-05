@@ -6,7 +6,7 @@ from pathlib import Path
 from textual import on
 from textual.app import App, ComposeResult
 from textual.binding import Binding
-from textual.containers import Container, Vertical
+from textual.containers import Container, Horizontal, Vertical, VerticalScroll
 from textual.screen import ModalScreen
 from textual.widgets import Button, Footer, Header, Label, SelectionList, Static
 
@@ -24,6 +24,11 @@ def state_color(state: BranchState) -> str:
 
 
 class ConfirmDeleteScreen(ModalScreen[bool]):
+    BINDINGS = [
+        Binding("enter", "confirm", "confirm", priority=True),
+        Binding("escape", "cancel", "cancel"),
+    ]
+
     def __init__(self, branch_names: list[str], *, dry_run: bool) -> None:
         super().__init__()
         self.branch_names = branch_names
@@ -35,19 +40,34 @@ class ConfirmDeleteScreen(ModalScreen[bool]):
         yield Container(
             Vertical(
                 Label("Confirm Selection"),
-                Static(f"You are about to {action}:\n\n{branch_lines}"),
-                Button("Cancel", id="cancel"),
-                Button("Confirm", id="confirm", variant="error"),
+                VerticalScroll(
+                    Static(f"You are about to {action}:\n\n{branch_lines}"),
+                    id="confirm-body",
+                ),
+                Horizontal(
+                    Button("Cancel", id="cancel"),
+                    Button("Confirm", id="confirm", variant="error"),
+                    id="confirm-actions",
+                ),
             ),
             id="confirm-dialog",
         )
 
+    def on_mount(self) -> None:
+        self.set_focus(self.query_one("#confirm", Button))
+
     @on(Button.Pressed, "#cancel")
-    def cancel(self) -> None:
+    def on_cancel_pressed(self) -> None:
+        self.action_cancel()
+
+    def action_cancel(self) -> None:
         self.dismiss(False)
 
     @on(Button.Pressed, "#confirm")
-    def confirm(self) -> None:
+    def on_confirm_pressed(self) -> None:
+        self.action_confirm()
+
+    def action_confirm(self) -> None:
         self.dismiss(True)
 
 
@@ -70,10 +90,24 @@ class BranchCleanupApp(App[TuiResult]):
 
     #confirm-dialog {
         width: 70;
-        height: auto;
+        height: 80%;
         border: solid $primary;
         background: $surface;
         padding: 1 2;
+    }
+
+    #confirm-dialog > Vertical {
+        height: 1fr;
+    }
+
+    #confirm-body {
+        height: 1fr;
+        margin: 1 0;
+    }
+
+    #confirm-actions {
+        height: auto;
+        width: 1fr;
     }
     """
 
@@ -128,6 +162,10 @@ class BranchCleanupApp(App[TuiResult]):
         selection_list.deselect_all()
 
     def action_confirm(self) -> None:
+        if isinstance(self.screen, ConfirmDeleteScreen):
+            self.screen.action_confirm()
+            return
+
         selection_list = self.query_one("#branches", SelectionList)
         selected = [str(value) for value in selection_list.selected]
         if not selected:
