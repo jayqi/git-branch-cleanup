@@ -23,6 +23,7 @@ build-backend = "uv_build"
 dev = [
   "ruff",
   "pytest",
+  "pytest-asyncio",
   "coverage",
   "pytest-cov",
 ]
