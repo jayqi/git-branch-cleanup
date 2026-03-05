@@ -3,6 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from git import InvalidGitRepositoryError, Repo
+from git.exc import GitCommandError, NoSuchPathError
 
 
 class GitRepoError(RuntimeError):
@@ -12,7 +13,7 @@ class GitRepoError(RuntimeError):
 def open_repo(path: str | Path) -> Repo:
     try:
         return Repo(path, search_parent_directories=True)
-    except InvalidGitRepositoryError as exc:
+    except (InvalidGitRepositoryError, NoSuchPathError) as exc:
         raise GitRepoError(f"Not a git repository: {path}") from exc
 
 
@@ -67,7 +68,7 @@ def is_branch_contained(repo: Repo, *, branch_name: str, default_branch: str) ->
     try:
         repo.git.merge_base("--is-ancestor", branch_name, default_branch)
         return True
-    except Exception:
+    except GitCommandError:
         return False
 
 
