@@ -7,7 +7,10 @@ This project is Python CLI tool that identifies stale local git branches (accoun
 This project uses uv for Python environment management and Just as a task runner.
 
 - Use `uv run` for anything that needs to be run in the project's Python environment.
-- Common actions are defined as recipes in the [`justfile`](/justfile). Run `just` by itself to see documentation. Several commands are variadic and pass through arguments. This can be useful for running the recipe on specific files.
+- Common actions are defined as recipes in the [`justfile`](/justfile).
+    - Prefer using `just` recipes for actions when relevant.
+    - Several commands are variadic and pass through arguments. This can be useful for running recipes on specific files.
+    - Run `just` by itself to see documentation.
 
 ## Code quality
 
@@ -16,6 +19,6 @@ This project uses uv for Python environment management and Just as a task runner
 
 ## Development and testing
 
-- Use red/green test-driven development
+- Use red/green test-driven development: write failing tests first before implementing changes that make them pass
 - Testing uses pytest and goes in [`tests/`](/tests/)
 - Run the test suite with `just test` (variadic)
