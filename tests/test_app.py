@@ -188,7 +188,7 @@ async def test_summary_shows_repo_path_and_state_counts() -> None:
     async with app.run_test() as pilot:
         await pilot.pause()
         summary = str(app.query_one("#summary", Static).render())
-        assert "Repo: /tmp/repo" in summary
+        assert f"Repo: {Path('/tmp/repo')}" in summary
         assert "1 merged · 1 closed · 1 open · 1 no PR" in summary
         app.exit()
 
