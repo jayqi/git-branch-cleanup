@@ -78,7 +78,6 @@ class BranchCleanupApp(App[TuiResult]):
     """
 
     BINDINGS = [
-        Binding("space", "toggle", "toggle"),
         Binding("a", "select_all", "all"),
         Binding("n", "select_none", "none"),
         Binding("enter", "confirm", "delete selected", priority=True),
