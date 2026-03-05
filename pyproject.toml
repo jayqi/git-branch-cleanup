@@ -48,8 +48,15 @@ force-sort-within-sections = true
 
 [tool.pytest.ini_options]
 minversion = "6.0"
-addopts = "--cov=git_branch_cleanup --cov-report=term --cov-report=html --cov-report=xml --cov-append"
+addopts = "--cov=git_branch_cleanup --cov-report=term --cov-report=html --cov-report=xml"
 testpaths = ["tests"]
 
 [tool.coverage.run]
 source = ["git_branch_cleanup"]
+# debug = ["pathmap"]  # Useful if path mapping isn't working as expected
+
+[tool.coverage.paths]
+git_branch_cleanup = [
+  "src/git_branch_cleanup/",
+  "*/site-packages/git_branch_cleanup/"
+]
