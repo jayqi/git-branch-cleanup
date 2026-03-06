@@ -34,6 +34,17 @@ def test_delete_local_branch_returns_deleted_on_success() -> None:
     git.branch.assert_called_once_with("-D", "feature/a")
 
 
+def test_delete_local_branch_returns_dry_run_and_skips_git_delete() -> None:
+    git = SimpleNamespace(branch=Mock())
+    repo = SimpleNamespace(git=git)
+
+    result = delete_local_branch(repo, "feature/a", dry_run=True)
+
+    assert result.status is DeleteBranchStatus.DRY_RUN
+    assert result.branch_name == "feature/a"
+    git.branch.assert_not_called()
+
+
 def test_delete_local_branch_returns_skipped_for_worktree_checked_out_error() -> None:
     git = SimpleNamespace(
         branch=Mock(
