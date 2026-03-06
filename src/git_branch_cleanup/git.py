@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from dataclasses import dataclass
+from enum import Enum
 from pathlib import Path
 
 from git import InvalidGitRepositoryError, Repo
@@ -8,6 +10,20 @@ from git.exc import GitCommandError, NoSuchPathError
 
 class GitRepoError(RuntimeError):
     pass
+
+
+class DeleteBranchStatus(Enum):
+    DELETED = "deleted"
+    SKIPPED_WORKTREE = "skipped_worktree"
+    FAILED = "failed"
+    DRY_RUN = "dry_run"
+
+
+@dataclass(frozen=True)
+class DeleteBranchResult:
+    branch_name: str
+    status: DeleteBranchStatus
+    message: str | None = None
 
 
 def open_repo(path: str | Path) -> Repo:
@@ -72,7 +88,24 @@ def is_branch_contained(repo: Repo, *, branch_name: str, default_branch: str) ->
         return False
 
 
-def delete_local_branch(repo: Repo, branch_name: str, *, dry_run: bool) -> None:
+def delete_local_branch(repo: Repo, branch_name: str, *, dry_run: bool) -> DeleteBranchResult:
     if dry_run:
-        return
-    repo.git.branch("-D", branch_name)
+        return DeleteBranchResult(branch_name=branch_name, status=DeleteBranchStatus.DRY_RUN)
+
+    try:
+        repo.git.branch("-D", branch_name)
+    except GitCommandError as exc:
+        message = str(exc.stderr or exc.stdout or exc).strip()
+        if "checked out at" in message.lower():
+            return DeleteBranchResult(
+                branch_name=branch_name,
+                status=DeleteBranchStatus.SKIPPED_WORKTREE,
+                message=message,
+            )
+        return DeleteBranchResult(
+            branch_name=branch_name,
+            status=DeleteBranchStatus.FAILED,
+            message=message,
+        )
+
+    return DeleteBranchResult(branch_name=branch_name, status=DeleteBranchStatus.DELETED)
