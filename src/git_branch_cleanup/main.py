@@ -61,14 +61,7 @@ def delete_selected_branches(
 ) -> list[DeleteBranchResult]:
     results: list[DeleteBranchResult] = []
     for branch_name in selected:
-        try:
-            result = delete_fn(repo, branch_name, dry_run=dry_run)
-        except Exception as exc:
-            result = DeleteBranchResult(
-                branch_name=branch_name,
-                status=DeleteBranchStatus.FAILED,
-                message=str(exc),
-            )
+        result = delete_fn(repo, branch_name, dry_run=dry_run)
         results.append(result)
     return results
 
@@ -146,6 +139,7 @@ def main() -> None:
                 print(f"Failed to delete {len(failed)} branch(es):")
                 for result in failed:
                     print(f"- {result.branch_name}: {result.message}")
+                parser.exit(1, "")
 
     except GitRepoError as exc:
         parser.exit(2, f"Error: {exc}\n")
