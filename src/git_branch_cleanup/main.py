@@ -6,6 +6,8 @@ from pathlib import Path
 
 from git_branch_cleanup.app import BranchCleanupApp
 from git_branch_cleanup.git import (
+    DeleteBranchResult,
+    DeleteBranchStatus,
     GitRepoError,
     current_branch_name,
     delete_local_branch,
@@ -48,6 +50,20 @@ def build_branch_infos(
         state = classify_branch(pr=pr, is_contained=contained)
         infos.append(BranchInfo(name=branch_name, state=state, pr=pr, is_contained=contained))
     return infos
+
+
+def delete_selected_branches(
+    *,
+    repo,
+    selected: list[str],
+    dry_run: bool,
+    delete_fn=delete_local_branch,
+) -> list[DeleteBranchResult]:
+    results: list[DeleteBranchResult] = []
+    for branch_name in selected:
+        result = delete_fn(repo, branch_name, dry_run=dry_run)
+        results.append(result)
+    return results
 
 
 def main() -> None:
@@ -97,15 +113,33 @@ def main() -> None:
             print("No branches selected.")
             return
 
-        for branch_name in selected:
-            delete_local_branch(repo, branch_name, dry_run=args.dry_run)
+        results = delete_selected_branches(repo=repo, selected=selected, dry_run=args.dry_run)
 
         if args.dry_run:
             print(f"Dry run complete. Would delete {len(selected)} branch(es).")
         else:
-            print(f"Deleted {len(selected)} branch(es):")
-            for name in selected:
-                print(f"- {name}")
+            deleted = [result for result in results if result.status is DeleteBranchStatus.DELETED]
+            skipped = [
+                result
+                for result in results
+                if result.status is DeleteBranchStatus.SKIPPED_WORKTREE
+            ]
+            failed = [result for result in results if result.status is DeleteBranchStatus.FAILED]
+
+            print(f"Deleted {len(deleted)} branch(es):")
+            for result in deleted:
+                print(f"- {result.branch_name}")
+
+            if skipped:
+                print(f"Skipped {len(skipped)} branch(es) checked out in a worktree:")
+                for result in skipped:
+                    print(f"- {result.branch_name}: {result.message}")
+
+            if failed:
+                print(f"Failed to delete {len(failed)} branch(es):")
+                for result in failed:
+                    print(f"- {result.branch_name}: {result.message}")
+                parser.exit(1)
 
     except GitRepoError as exc:
         parser.exit(2, f"Error: {exc}\n")

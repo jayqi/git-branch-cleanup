@@ -33,3 +33,17 @@ def test_classify_branch_with_closed_pr() -> None:
     result = classify_branch(pr=pr, is_contained=False)
 
     assert result is BranchState.CLOSED
+
+
+def test_classify_branch_with_open_pr() -> None:
+    pr = PullRequestInfo(
+        number=77,
+        title="Active change",
+        state="OPEN",
+        merged_at=None,
+        created_at="2026-03-02T10:00:00Z",
+    )
+
+    result = classify_branch(pr=pr, is_contained=False)
+
+    assert result is BranchState.OPEN
