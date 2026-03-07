@@ -139,7 +139,7 @@ def main() -> None:
                 print(f"Failed to delete {len(failed)} branch(es):")
                 for result in failed:
                     print(f"- {result.branch_name}: {result.message}")
-                parser.exit(1, "")
+                parser.exit(1)
 
     except GitRepoError as exc:
         parser.exit(2, f"Error: {exc}\n")
