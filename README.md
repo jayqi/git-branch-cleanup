@@ -4,7 +4,7 @@
 
 In addition to checking with git whether a branch's commits are in your default branch, it will also query GitHub for PRs for each branch that have been merged. This allows for the detection of branches that were merged in with a [squash and merge](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/incorporating-changes-from-a-pull-request/about-pull-request-merges#squash-and-merge-your-commits), which is otherwise not detectable by git alone.
 
-![Screenshot of the git-branch-cleanup TUI](./docs/screenshot.webp)
+<img alt="Screenshot of the git-branch-cleanup TUI" src="./docs/screenshot.webp" width=400>
 
 ## Usage
 
