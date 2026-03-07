@@ -1,7 +1,7 @@
 [project]
 name = "git-branch-cleanup"
 version = "0.1.0"
-description = "Add your description here"
+description = "TUI program for cleaning up merged git branches with handling for squash-and-merge"
 readme = "README.md"
 authors = [
     { name = "Jay Qi", email = "jayqi@users.noreply.github.com" }
